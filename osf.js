@@ -12,63 +12,30 @@
 "use strict";
 
 CodeMirror.defineMode("osf", function() {
-  function words(array) {
-    var keys = {};
-    for (var i = 0; i < array.length; ++i) {
-      keys[array[i]] = true;
-    }
-    return keys;
-  }
-
-  var categories = words([
-                  "abstract", "accept", "allocatable", "allocate",
-                  "array", "assign", "asynchronous", "backspace",
-                  "bind", "block", "byte", "call", "case",
-                  "class", "close", "common", "contains",
-                  "continue", "cycle", "data", "deallocate",
-                  "decode", "deferred", "dimension", "do",
-                  "elemental", "else", "encode", "end",
-                  "endif", "entry", "enumerator", "equivalence",
-                  "exit", "external", "extrinsic", "final",
-                  "forall", "format", "function", "generic",
-                  "go", "goto", "if", "implicit", "import", "include",
-                  "inquire", "intent", "interface", "intrinsic",
-                  "module", "namelist", "non_intrinsic",
-                  "non_overridable", "none", "nopass",
-                  "nullify", "open", "optional", "options",
-                  "parameter", "pass", "pause", "pointer",
-                  "print", "private", "program", "protected",
-                  "public", "pure", "read", "recursive", "result",
-                  "return", "rewind", "save", "select", "sequence",
-                  "stop", "subroutine", "target", "then", "to", "type",
-                  "use", "value", "volatile", "where", "while",
-                  "write"]);
-
   var header_is_parsed = false;
 
   var UNIXtimestamp = new RegExp("(\\d+){10}", "i");
   var timestamp = new RegExp("(\\d+){2}:(\\d+){2}:(\\d+){2}", "i");
   var timestamp_micro = new RegExp("(\\d+){2}:(\\d+){2}:(\\d+){2}.(\\d+)", "i");
+  var categories = new RegExp("#chapter|#topic|#video|#audio|#image|#quote|#shopping|#prediction|#glosarry|#revision|#link", "i");
+  var categories_short = new RegExp("#c|#t|#v|#a|#i|#q|#r", "i");
 
   function tokenBase(stream, state) {
 
-    if (stream.match(UNIXtimestamp)){
-        return 'variable-3';
+    if (stream.match(categories) || stream.match(categories_short)){
+        return 'keyword';
     }
 
-    if (stream.match(timestamp_micro)){
-        return 'variable-3';
-    }
-
-    if (stream.match(timestamp)){
+    if (stream.match(UNIXtimestamp) || stream.match(timestamp_micro) || stream.match(timestamp)){
         return 'variable-3';
     }
 
     var ch = stream.next();
     if (ch == "#" ) {
+      console.log(stream);
       if ( ! stream.skipTo(' ') )
         stream.skipToEnd();
-      return "hr";
+      return "meta";
     }
     if (ch == "\\" ) {
       stream.skipTo(' ');
