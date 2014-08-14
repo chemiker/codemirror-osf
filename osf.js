@@ -1,5 +1,11 @@
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
+// 
+// CodeMirror OSF Version 1.0
+// Author: Alexander Lüken
+// 
+// Codemirror OSF does syntax highlighting for the OSF Shownotes Format.
+// It is based on the CodeMirror FORTRAN mode.
 
 (function(mod) {
   if (typeof exports == "object" && typeof module == "object") // CommonJS
@@ -12,51 +18,57 @@
 "use strict";
 
 CodeMirror.defineMode("osf", function() {
-  var header_is_parsed = false;
+  var headerIsParsed = false;
 
-  var UNIXtimestamp = new RegExp("(\\d+){10}", "i");
+  // Fetch timestamps (UNIX, HH:MM:SS and HH:MM:SS.mmm)
+  // It is likely, that only one RegExp is needed here.
+  var timestampUNIX = new RegExp("(\\d+){10}", "i");
   var timestamp = new RegExp("(\\d+){2}:(\\d+){2}:(\\d+){2}", "i");
-  var timestamp_micro = new RegExp("(\\d+){2}:(\\d+){2}:(\\d+){2}.(\\d+)", "i");
+  var timestampMicro = new RegExp("(\\d+){2}:(\\d+){2}:(\\d+){2}.(\\d+)", "i");
+  // RegExp for Categories
   var categories = new RegExp("#chapter|#topic|#video|#audio|#image|#quote|#shopping|#prediction|#glosarry|#revision|#link", "i");
-  var categories_short = new RegExp("#c|#t|#v|#a|#i|#q|#r", "i");
+  var categoriesShort = new RegExp("#c|#t|#v|#a|#i|#q|#r", "i");
 
   function tokenBase(stream, state) {
-
-    if (stream.match(categories) || stream.match(categories_short)){
-        return 'keyword';
+    if ( headerIsParsed == false ) {
+      // Timestamps
+      if ( stream.match(timestampUNIX) || stream.match(timestampMicro) || stream.match(timestamp) ){
+          return 'variable-3';
+      }
+      // Categories
+      if ( stream.match(categories) || stream.match(categoriesShort) ){
+          return 'keyword';
+      }
+      // Tags
+      var ch = stream.next();
+      if ( ch == "#" ) {
+        if ( ! stream.skipTo(' ') )
+          stream.skipToEnd();
+        return "meta";
+      }
+      // If a \ is present the current word is escaped. Skip to the next white-space char.
+      if ( ch == "\\" ) {
+        stream.skipTo(' ');
+        return;
+      }
+      // Links
+      if ( ch == '<' ) {
+        state.tokenize = tokenLink( '>' );
+        return state.tokenize(stream, state);
+      }
     }
 
-    if (stream.match(UNIXtimestamp) || stream.match(timestamp_micro) || stream.match(timestamp)){
-        return 'variable-3';
-    }
-
-    var ch = stream.next();
-    if (ch == "#" ) {
-      console.log(stream);
-      if ( ! stream.skipTo(' ') )
-        stream.skipToEnd();
-      return "meta";
-    }
-    if (ch == "\\" ) {
-      stream.skipTo(' ');
-      return;
-    }
-    if ( ch == '<' ) {
-      state.tokenize = tokenString( '>' );
-      return state.tokenize(stream, state);
-    }
-
-    // Checking for Header Part
+    // Header
     while ( stream.string ) {
       if ( stream.string == 'HEADER' ) {
-        header_is_parsed = true;
+        headerIsParsed = true;
       }
       if ( stream.string == '/HEADER' ) {
-        header_is_parsed = false;
+        headerIsParsed = false;
         stream.next();
         return "header";
       }
-      if ( header_is_parsed ) {
+      if ( headerIsParsed ) {
        stream.next();
        return "header";
       }
@@ -66,11 +78,11 @@ CodeMirror.defineMode("osf", function() {
     }
   }
 
-  function tokenString(quote) {
+  function tokenLink( token ) {
     return function(stream, state) {
       var escaped = false, next, end = false;
       while ((next = stream.next()) != null) {
-        if (next == quote && !escaped) {
+        if (next == token && !escaped) {
             end = true;
             break;
         }
@@ -81,8 +93,6 @@ CodeMirror.defineMode("osf", function() {
     };
   }
 
-  // Interface
-
   return {
     startState: function() {
       return {tokenize: null};
@@ -91,7 +101,6 @@ CodeMirror.defineMode("osf", function() {
     token: function(stream, state) {
       if (stream.eatSpace()) return null;
       var style = (state.tokenize || tokenBase)(stream, state);
-      if (style == "comment" || style == "meta") return style;
       return style;
     }
   };
