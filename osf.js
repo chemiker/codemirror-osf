@@ -26,8 +26,8 @@ CodeMirror.defineMode("osf", function() {
   var timestamp = new RegExp("(\\d+){2}:(\\d+){2}:(\\d+){2}", "i");
   var timestampMicro = new RegExp("(\\d+){2}:(\\d+){2}:(\\d+){2}.(\\d+)", "i");
   // RegExp for Categories
-  var categories = new RegExp("#chapter|#topic|#video|#audio|#image|#quote|#shopping|#prediction|#glosarry|#revision|#link", "i");
-  var categoriesShort = new RegExp("#c|#t|#v|#a|#i|#q|#r", "i");
+  var categories = new RegExp("(#chapter\\s)|(#topic\\s)|(#video\\s)|(#audio\\s)|(#image\\s)|(#quote\\s)|(#shopping\\s)|(#prediction\\s)|(#glosarry\\s)|(#revision\\s)|(#link\\s)|(#chapter$)|(#topic$)|(#video$)|(#audio$)|(#image$)|(#quote$)|(#shopping$)|(#prediction$)|(#glosarry$)|(#revision$)|(#link$)", "i");
+  var categoriesShort = new RegExp("(#c\\s)|(#t\\s)|(#v\\s)|(#a\\s)|(#i\\s)|(#q\\s)|(#r\\s)|(#c$)|(#t$)|(#v$)|(#a$)|(#i$)|(#q$)|(#r$)", "i");
 
   function tokenBase(stream, state) {
     if ( headerIsParsed == false ) {
@@ -74,7 +74,7 @@ CodeMirror.defineMode("osf", function() {
       }
       stream.next();
 
-      return null;
+      return;
     }
   }
 
